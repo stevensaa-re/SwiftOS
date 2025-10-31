@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftOS - Linux on web</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'MS Sans Serif', Arial, sans-serif;
+            overflow: hidden;
+            background: #008080;
+            cursor: default;
+        }
+
+        .desktop {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #008080;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 80px);
+            grid-auto-rows: 90px;
+            gap: 10px;
+            align-content: start;
+        }
+
+        .desktop-icon {
+            width: 70px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .desktop-icon:active {
+            filter: brightness(1.2);
+        }
+
+        .icon-image {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 5px;
+            background: #c0c0c0;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-label {
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            font-size: 11px;
+            word-wrap: break-word;
+        }
+
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35px;
+            background: #c0c0c0;
+            border-top: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            z-index: 10000;
+        }
+
+        .start-button {
+            height: 30px;
+            padding: 0 20px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .start-button:active {
+            border-style: inset;
+        }
+
+        .taskbar-apps {
+            flex: 1;
+            display: flex;
+            gap: 5px;
+            margin-left: 5px;
+            overflow-x: auto;
+        }
+
+        .taskbar-app {
+            height: 28px;
+            padding: 0 15px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .taskbar-app.active {
+            border-style: inset;
+        }
+
+        .system-tray {
+            height: 28px;
+            border: 1px inset #808080;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .window {
+            position: absolute;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            min-width: 300px;
+            min-height: 200px;
+            display: none;
+        }
+
+        .window.active {
+            display: block;
+            z-index: 1000;
+        }
+
+        .window-titlebar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 3px 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+
+        .window-title {
+            font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .window-button {
+            width: 16px;
+            height: 14px;
+            background: #c0c0c0;
+            border: 1px outset #fff;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+        }
+
+        .window-button:active {
+            border-style: inset;
+        }
+
+        .window-content {
+            background: white;
+            height: calc(100% - 22px);
+            overflow: auto;
+        }
+
+        .browser-toolbar {
+            background: #e0e0e0;
+            padding: 5px;
+            border-bottom: 1px solid #808080;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .browser-button {
+            padding: 3px 8px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .browser-button:active {
+            border-style: inset;
+        }
+
+        .browser-address-input {
+            flex: 1;
+            padding: 3px 5px;
+            border: 2px inset #808080;
+            font-size: 11px;
+        }
+
+        .notepad-menu {
+            background: #c0c0c0;
+            padding: 2px 5px;
+            border-bottom: 2px groove #808080;
+            display: flex;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .notepad-menu span {
+            cursor: pointer;
+            padding: 2px 5px;
+        }
+
+        .notepad-menu span:hover {
+            background: #000080;
+            color: white;
+        }
+
+        .notepad-textarea {
+            width: 100%;
+            height: calc(100% - 25px);
+            border: none;
+            padding: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: none;
+            outline: none;
+        }
+
+        .game-container {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .game-header {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 5px 10px;
+            background: #c0c0c0;
+            border: 2px inset #808080;
+        }
+
+        .mine-grid {
+            display: grid;
+            gap: 0;
+            border: 3px inset #808080;
+            background: #c0c0c0;
+        }
+
+        .mine-cell {
+            width: 20px;
+            height: 20px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .mine-cell:active {
+            border-style: inset;
+        }
+
+        .mine-cell.revealed {
+            border: 1px solid #808080;
+            background: #bdbdbd;
+        }
+
+        .mine-cell.mine {
+            background: #ff0000;
+        }
+
+        .mine-cell.flagged::after {
+            content: '🚩';
+            font-size: 12px;
+        }
+
+        .calc-display {
+            width: 100%;
+            padding: 10px;
+            text-align: right;
+            font-size: 20px;
+            border: 2px inset #808080;
+            background: white;
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+        }
+
+        .calc-button {
+            padding: 15px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .calc-button:active {
+            border-style: inset;
+        }
+
+        .paint-toolbar {
+            background: #c0c0c0;
+            padding: 5px;
+            border-bottom: 2px groove #808080;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .paint-canvas {
+            background: white;
+            cursor: crosshair;
+            display: block;
+        }
+
+        .color-picker {
+            width: 30px;
+            height: 30px;
+            border: 2px outset #fff;
+            cursor: pointer;
+        }
+
+        .snake-canvas {
+            background: #000;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .start-menu {
+            position: fixed;
+            bottom: 37px;
+            left: 2px;
+            width: 250px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            display: none;
+            flex-direction: column;
+            z-index: 9999;
+        }
+
+        .start-menu.active {
+            display: flex;
+        }
+
+        .start-menu-header {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 30px 10px;
+            font-weight: bold;
+            font-size: 18px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .start-menu-items {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .start-menu-item {
+            padding: 8px 35px 8px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .start-menu-item:hover {
+            background: #000080;
+            color: white;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .dialog-box {
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            padding: 20px;
+            min-width: 300px;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .dialog-content {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dialog-button {
+            padding: 5px 20px;
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            cursor: pointer;
+            min-width: 75px;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            cursor: nwse-resize;
+            background: linear-gradient(135deg, transparent 50%, #808080 50%);
+        }
+
+        .terminal {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            height: 100%;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .terminal-input {
+            display: flex;
+            gap: 5px;
+        }
+
+        .terminal-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #0f0;
+            outline: none;
+            font-family: inherit;
+            font-size: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop" id="desktop">
+        <div class="desktop-icon" ondblclick="openWindow('fileManager')">
+            <div class="icon-image">📁</div>
+            <div class="icon-label">My Computer</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('browser')">
+            <div class="icon-image">🌐</div>
+            <div class="icon-label">Browser</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('notepad')">
+            <div class="icon-image">📝</div>
+            <div class="icon-label">Notepad</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('minesweeper')">
+            <div class="icon-image">💣</div>
+            <div class="icon-label">Minesweeper</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('calculator')">
+            <div class="icon-image">🔢</div>
+            <div class="icon-label">Calculator</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('paint')">
+            <div class="icon-image">🎨</div>
+            <div class="icon-label">Paint</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('snake')">
+            <div class="icon-image">🐍</div>
+            <div class="icon-label">Snake</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('terminal')">
+            <div class="icon-image">⬛</div>
+            <div class="icon-label">Terminal</div>
+        </div>
+        <div class="desktop-icon" ondblclick="showAbout()">
+            <div class="icon-image">ℹ️</div>
+            <div class="icon-label">About</div>
+        </div>
+    </div>
+
+    <div class="start-menu" id="startMenu">
+        <div style="display: flex;">
+            <div class="start-menu-header">SwiftOS</div>
+            <div class="start-menu-items">
+                <div class="start-menu-item" onclick="openWindow('notepad')">
+                    <span>📝</span> Notepad
+                </div>
+                <div class="start-menu-item" onclick="openWindow('calculator')">
+                    <span>🔢</span> Calculator
+                </div>
+                <div class="start-menu-item" onclick="openWindow('paint')">
+                    <span>🎨</span> Paint
+                </div>
+                <div class="start-menu-item" onclick="openWindow('browser')">
+                    <span>🌐</span> Browser
+                </div>
+                <hr style="margin: 5px 0; border: 1px inset #808080;">
+                <div class="start-menu-item" onclick="openWindow('minesweeper')">
+                    <span>💣</span> Minesweeper
+                </div>
+                <div class="start-menu-item" onclick="openWindow('snake')">
+                    <span>🐍</span> Snake
+                </div>
+                <hr style="margin: 5px 0; border: 1px inset #808080;">
+                <div class="start-menu-item" onclick="showAbout()">
+                    <span>ℹ️</span> About SwiftOS
+                </div>
+                <div class="start-menu-item" onclick="shutdown()">
+                    <span>⏻</span> Shutdown
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="window" id="browser" style="width: 900px; height: 600px; top: 30px; left: 100px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'browser')">
+            <div class="window-title"><span>🌐</span> SwiftBrowser</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('browser')">_</div>
+                <div class="window-button" onclick="maximizeWindow('browser')">□</div>
+                <div class="window-button" onclick="closeWindow('browser')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0; display: flex; flex-direction: column;">
+            <div class="browser-toolbar">
+                <button class="browser-button" onclick="browserBack()">◄</button>
+                <button class="browser-button" onclick="browserForward()">►</button>
+                <button class="browser-button" onclick="browserRefresh()">⟳</button>
+                <button class="browser-button" onclick="browserHome()">🏠</button>
+                <input type="text" class="browser-address-input" id="browserAddress" 
+                       placeholder="Enter URL or search..." onkeypress="handleBrowserKeypress(event)">
+                <button class="browser-button" onclick="browserGo()" style="padding: 3px 12px; font-size: 11px;">Go</button>
+            </div>
+            <iframe id="browserFrame" style="flex: 1; border: none; background: white;"></iframe>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event, 'browser')"></div>
+    </div>
+
+    <div class="window" id="notepad" style="width: 600px; height: 400px; top: 50px; left: 150px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'notepad')">
+            <div class="window-title"><span>📝</span> Notepad - Untitled</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('notepad')">_</div>
+                <div class="window-button" onclick="maximizeWindow('notepad')">□</div>
+                <div class="window-button" onclick="closeWindow('notepad')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0;">
+            <div class="notepad-menu">
+                <span onclick="notepadNew()">File</span>
+                <span onclick="notepadClear()">Clear</span>
+                <span>Edit</span>
+                <span>Help</span>
+            </div>
+            <textarea class="notepad-textarea" id="notepadText" placeholder="Type your text here..."></textarea>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event, 'notepad')"></div>
+    </div>
+
+    <div class="window" id="minesweeper" style="width: 350px; height: 400px; top: 80px; left: 200px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'minesweeper')">
+            <div class="window-title"><span>💣</span> Minesweeper</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('minesweeper')">_</div>
+                <div class="window-button" onclick="closeWindow('minesweeper')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="game-container">
+                <div class="game-header">
+                    <div>💣: <span id="mineCount">10</span></div>
+                    <button class="browser-button" onclick="resetMinesweeper()">😊</button>
+                    <div>⏱️: <span id="mineTime">0</span></div>
+                </div>
+                <div class="mine-grid" id="mineGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="window" id="calculator" style="width: 280px; height: 380px; top: 100px; left: 250px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'calculator')">
+            <div class="window-title"><span>🔢</span> Calculator</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('calculator')">_</div>
+                <div class="window-button" onclick="closeWindow('calculator')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 10px;">
+            <div class="calc-display" id="calcDisplay">0</div>
+            <div class="calc-buttons">
+                <div class="calc-button" onclick="calcClear()">C</div>
+                <div class="calc-button" onclick="calcInput('/')">/</div>
+                <div class="calc-button" onclick="calcInput('*')">*</div>
+                <div class="calc-button" onclick="calcBackspace()">←</div>
+                
+                <div class="calc-button" onclick="calcInput('7')">7</div>
+                <div class="calc-button" onclick="calcInput('8')">8</div>
+                <div class="calc-button" onclick="calcInput('9')">9</div>
+                <div class="calc-button" onclick="calcInput('-')">-</div>
+                
+                <div class="calc-button" onclick="calcInput('4')">4</div>
+                <div class="calc-button" onclick="calcInput('5')">5</div>
+                <div class="calc-button" onclick="calcInput('6')">6</div>
+                <div class="calc-button" onclick="calcInput('+')">+</div>
+                
+                <div class="calc-button" onclick="calcInput('1')">1</div>
+                <div class="calc-button" onclick="calcInput('2')">2</div>
+                <div class="calc-button" onclick="calcInput('3')">3</div>
+                <div class="calc-button" onclick="calcEquals()" style="grid-row: span 2;">=</div>
+                
+                <div class="calc-button" onclick="calcInput('0')" style="grid-column: span 2;">0</div>
+                <div class="calc-button" onclick="calcInput('.')">.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="window" id="paint" style="width: 700px; height: 500px; top: 60px; left: 120px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'paint')">
+            <div class="window-title"><span>🎨</span> Paint</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('paint')">_</div>
+                <div class="window-button" onclick="maximizeWindow('paint')">□</div>
+                <div class="window-button" onclick="closeWindow('paint')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0;">
+            <div class="paint-toolbar">
+                <button class="browser-button" onclick="paintClear()">Clear</button>
+                <div class="color-picker" style="background: black;" onclick="paintColor='black'"></div>
+                <div class="color-picker" style="background: red;" onclick="paintColor='red'"></div>
+                <div class="color-picker" style="background: green;" onclick="paintColor='green'"></div>
+                <div class="color-picker" style="background: blue;" onclick="paintColor='blue'"></div>
+                <div class="color-picker" style="background: yellow;" onclick="paintColor='yellow'"></div>
+                <div class="color-picker" style="background: purple;" onclick="paintColor='purple'"></div>
+                <div class="color-picker" style="background: orange;" onclick="paintColor='orange'"></div>
+            </div>
+            <canvas id="paintCanvas" class="paint-canvas" width="680" height="420"></canvas>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event, 'paint')"></div>
+    </div>
+
+    <div class="window" id="snake" style="width: 450px; height: 500px; top: 70px; left: 180px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'snake')">
+            <div class="window-title"><span>🐍</span> Snake Game</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('snake')">_</div>
+                <div class="window-button" onclick="closeWindow('snake')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="game-container">
+                <div class="game-header">
+                    <div>Score: <span id="snakeScore">0</span></div>
+                    <button class="browser-button" onclick="resetSnake()">New Game</button>
+                </div>
+                <canvas id="snakeCanvas" class="snake-canvas" width="400" height="400"></canvas>
+                <p style="font-size: 11px; margin-top: 10px;">Use Arrow Keys to play</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="window" id="terminal" style="width: 600px; height: 400px; top: 90px; left: 90px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'terminal')">
+            <div class="window-title"><span>⬛</span> Terminal</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('terminal')">_</div>
+                <div class="window-button" onclick="maximizeWindow('terminal')">□</div>
+                <div class="window-button" onclick="closeWindow('terminal')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 0;">
+            <div class="terminal" id="terminalContent">
+                <div>SwiftOS Terminal v1.0</div>
+                <div>Type 'help' for available commands</div>
+                <div style="margin-top: 10px;">
+                    <div class="terminal-input">
+                        <span>user@swiftos:~$</span>
+                        <input type="text" id="terminalInput" onkeypress="handleTerminalInput(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event, 'terminal')"></div>
+    </div>
+
+    <div class="window" id="fileManager" style="width: 600px; height: 400px; top: 40px; left: 40px;">
+        <div class="window-titlebar" onmousedown="startDrag(event, 'fileManager')">
+            <div class="window-title"><span>📁</span> My Computer</div>
+            <div class="window-controls">
+                <div class="window-button" onclick="minimizeWindow('fileManager')">_</div>
+                <div class="window-button" onclick="maximizeWindow('fileManager')">□</div>
+                <div class="window-button" onclick="closeWindow('fileManager')">×</div>
+            </div>
+        </div>
+        <div class="window-content" style="padding: 10px;">
+            <h3>My Computer</h3>
+            <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
+                <div style="text-align: center; cursor: pointer;">
+                    <div style="font-size: 48px;">💾</div>
+                    <div>C:\ Drive</div>
+                </div>
+                <div style="text-align: center; cursor: pointer;">
+                    <div style="font-size: 48px;">💿</div>
+                    <div>D:\ Drive</div>
+                </div>
+                <div style="text-align: center; cursor: pointer;" ondblclick="openWindow('notepad')">
+                    <div style="font-size: 48px;">📁</div>
+                    <div>Documents</div>
+                </div>
+            </div>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event, 'fileManager')"></div>
+    </div>
+
+    <div class="taskbar">
+        <div class="start-button" onclick="toggleStartMenu()">
+            <span>🪟</span> Start
+        </div>
+        <div class="taskbar-apps" id="taskbarApps"></div>
+        <div class="system-tray">
+            <span>🔊</span>
+            <span>🌐</span>
+            <span id="clock">12:00</span>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="dialog-box">
+            <div class="dialog-content">
+                <div style="font-size: 32px;">ℹ️</div>
+                <div id="dialogMessage">Dialog message</div>
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-button" onclick="closeDialog()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let draggedWindow = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let resizingWindow = null;
+        let browserHistory = [];
+        let browserHistoryIndex = -1;
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = 
+                `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function openWindow(id) {
+            const win = document.getElementById(id);
+            win.classList.add('active');
+            win.style.display = 'block';
+            bringToFront(id);
+            updateTaskbar();
+            closeStartMenu();
+            
+            if (id === 'minesweeper' && !win.dataset.initialized) {
+                initMinesweeper();
+                win.dataset.initialized = 'true';
+            }
+            if (id === 'paint' && !win.dataset.initialized) {
+                initPaint();
+                win.dataset.initialized = 'true';
+            }
+            if (id === 'snake' && !win.dataset.initialized) {
+                initSnake();
+                win.dataset.initialized = 'true';
+            }
+        }
+
+        function closeWindow(id) {
+            document.getElementById(id).style.display = 'none';
+            updateTaskbar();
+        }
+
+        function minimizeWindow(id) {
+            document.getElementById(id).style.display = 'none';
+            updateTaskbar();
+        }
+
+        function maximizeWindow(id) {
+            const win = document.getElementById(id);
+            if (win.dataset.maximized === 'true') {
+                win.style.width = win.dataset.oldWidth;
+                win.style.height = win.dataset.oldHeight;
+                win.style.top = win.dataset.oldTop;
+                win.style.left = win.dataset.oldLeft;
+                win.dataset.maximized = 'false';
+            } else {
+                win.dataset.oldWidth = win.style.width;
+                win.dataset.oldHeight = win.style.height;
+                win.dataset.oldTop = win.style.top;
+                win.dataset.oldLeft = win.style.left;
+                win.style.width = '100vw';
+                win.style.height = 'calc(100vh - 35px)';
+                win.style.top = '0';
+                win.style.left = '0';
+                win.dataset.maximized = 'true';
+            }
+        }
+
+        function bringToFront(id) {
+            document.querySelectorAll('.window').forEach(w => w.style.zIndex = '1000');
+            document.getElementById(id).style.zIndex = '1001';
+        }
+
+        function startDrag(e, id) {
+            draggedWindow = document.getElementById(id);
+            const rect = draggedWindow.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            bringToFront(id);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (draggedWindow) {
+                draggedWindow.style.left = (e.clientX - dragOffsetX) + 'px';
+                draggedWindow.style.top = (e.clientY - dragOffsetY) + 'px';
+            }
+            if (resizingWindow) {
+                const rect = resizingWindow.getBoundingClientRect();
+                resizingWindow.style.width = (e.clientX - rect.left) + 'px';
+                resizingWindow.style.height = (e.clientY - rect.top) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            draggedWindow = null;
+            resizingWindow = null;
+        });
+
+        function startResize(e, id) {
+            e.stopPropagation();
+            resizingWindow = document.getElementById(id);
+        }
+
+        function toggleStartMenu() {
+            document.getElementById('startMenu').classList.toggle('active');
+        }
+
+        function closeStartMenu() {
+            document.getElementById('startMenu').classList.remove('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('startMenu');
+            const btn = document.querySelector('.start-button');
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                closeStartMenu();
+            }
+        });
+
+        function updateTaskbar() {
+            const taskbar = document.getElementById('taskbarApps');
+            taskbar.innerHTML = '';
+            const windows = {
+                browser: '🌐 Browser',
+                notepad: '📝 Notepad',
+                minesweeper: '💣 Minesweeper',
+                calculator: '🔢 Calculator',
+                paint: '🎨 Paint',
+                snake: '🐍 Snake',
+                terminal: '⬛ Terminal',
+                fileManager: '📁 Files'
+            };
+            for (let [id, label] of Object.entries(windows)) {
+                const win = document.getElementById(id);
+                if (win.style.display === 'block') {
+                    const btn = document.createElement('div');
+                    btn.className = 'taskbar-app';
+                    if (win.style.zIndex === '1001') btn.classList.add('active');
+                    btn.textContent = label;
+                    btn.onclick = () => {
+                        if (win.style.display === 'none') win.style.display = 'block';
+                        bringToFront(id);
+                    };
+                    taskbar.appendChild(btn);
+                }
+            }
+        }
+
+        function browserGo() {
+            let url = document.getElementById('browserAddress').value.trim();
+            if (!url) return;
+            if (!url.includes('.') && !url.startsWith('http')) {
+                url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
+            } else if (!url.startsWith('http')) {
+                url = 'https://' + url;
+            }
+            browserHistory.push(url);
+            browserHistoryIndex = browserHistory.length - 1;
+            document.getElementById('browserFrame').src = url;
+        }
+
+        function handleBrowserKeypress(e) {
+            if (e.key === 'Enter') browserGo();
+        }
+
+        function browserBack() {
+            if (browserHistoryIndex > 0) {
+                browserHistoryIndex--;
+                const url = browserHistory[browserHistoryIndex];
+                document.getElementById('browserAddress').value = url;
+                document.getElementById('browserFrame').src = url;
+            }
+        }
+
+        function browserForward() {
+            if (browserHistoryIndex < browserHistory.length - 1) {
+                browserHistoryIndex++;
+                const url = browserHistory[browserHistoryIndex];
+                document.getElementById('browserAddress').value = url;
+                document.getElementById('browserFrame').src = url;
+            }
+        }
+
+        function browserRefresh() {
+            const frame = document.getElementById('browserFrame');
+            frame.src = frame.src;
+        }
+
+        function browserHome() {
+            document.getElementById('browserAddress').value = 'google.com';
+            browserGo();
+        }
+
+        function notepadNew() {
+            if (confirm('Create new document? Unsaved changes will be lost.')) {
+                document.getElementById('notepadText').value = '';
+            }
+        }
+
+        function notepadClear() {
+            document.getElementById('notepadText').value = '';
+        }
+
+        let calcExpression = '0';
+        
+        function calcInput(val) {
+            if (calcExpression === '0') calcExpression = '';
+            calcExpression += val;
+            document.getElementById('calcDisplay').textContent = calcExpression;
+        }
+
+        function calcClear() {
+            calcExpression = '0';
+            document.getElementById('calcDisplay').textContent = '0';
+        }
+
+        function calcBackspace() {
+            calcExpression = calcExpression.slice(0, -1) || '0';
+            document.getElementById('calcDisplay').textContent = calcExpression;
+        }
+
+        function calcEquals() {
+            try {
+                calcExpression = String(eval(calcExpression));
+                document.getElementById('calcDisplay').textContent = calcExpression;
+            } catch {
+                document.getElementById('calcDisplay').textContent = 'Error';
+                calcExpression = '0';
+            }
+        }
+
+        let mineGrid = [];
+        let mineRows = 10;
+        let mineCols = 10;
+        let mineCount = 10;
+        let mineTime = 0;
+        let mineTimer = null;
+        let mineGameOver = false;
+
+        function initMinesweeper() {
+            resetMinesweeper();
+        }
+
+        function resetMinesweeper() {
+            mineGameOver = false;
+            mineTime = 0;
+            document.getElementById('mineTime').textContent = '0';
+            if (mineTimer) clearInterval(mineTimer);
+            
+            mineGrid = [];
+            for (let i = 0; i < mineRows; i++) {
+                mineGrid[i] = [];
+                for (let j = 0; j < mineCols; j++) {
+                    mineGrid[i][j] = { mine: false, revealed: false, flagged: false, adjacent: 0 };
+                }
+            }
+            
+            let placed = 0;
+            while (placed < mineCount) {
+                const r = Math.floor(Math.random() * mineRows);
+                const c = Math.floor(Math.random() * mineCols);
+                if (!mineGrid[r][c].mine) {
+                    mineGrid[r][c].mine = true;
+                    placed++;
+                }
+            }
+            
+            for (let i = 0; i < mineRows; i++) {
+                for (let j = 0; j < mineCols; j++) {
+                    if (!mineGrid[i][j].mine) {
+                        let count = 0;
+                        for (let di = -1; di <= 1; di++) {
+                            for (let dj = -1; dj <= 1; dj++) {
+                                const ni = i + di, nj = j + dj;
+                                if (ni >= 0 && ni < mineRows && nj >= 0 && nj < mineCols && mineGrid[ni][nj].mine) {
+                                    count++;
+                                }
+                            }
+                        }
+                        mineGrid[i][j].adjacent = count;
+                    }
+                }
+            }
+            
+            renderMinesweeper();
+        }
+
+        function renderMinesweeper() {
+            const grid = document.getElementById('mineGrid');
+            grid.style.gridTemplateColumns = `repeat(${mineCols}, 20px)`;
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < mineRows; i++) {
+                for (let j = 0; j < mineCols; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'mine-cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    if (mineGrid[i][j].revealed) {
+                        cell.classList.add('revealed');
+                        if (mineGrid[i][j].mine) {
+                            cell.textContent = '💣';
+                            cell.classList.add('mine');
+                        } else if (mineGrid[i][j].adjacent > 0) {
+                            cell.textContent = mineGrid[i][j].adjacent;
+                            const colors = ['', 'blue', 'green', 'red', 'purple', 'maroon', 'turquoise', 'black', 'gray'];
+                            cell.style.color = colors[mineGrid[i][j].adjacent];
+                        }
+                    } else if (mineGrid[i][j].flagged) {
+                        cell.classList.add('flagged');
+                    }
+                    
+                    cell.onclick = () => revealCell(i, j);
+                    cell.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        toggleFlag(i, j);
+                    };
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function revealCell(r, c) {
+            if (mineGameOver || mineGrid[r][c].revealed || mineGrid[r][c].flagged) return;
+            
+            if (!mineTimer) {
+                mineTimer = setInterval(() => {
+                    mineTime++;
+                    document.getElementById('mineTime').textContent = mineTime;
+                }, 1000);
+            }
+            
+            mineGrid[r][c].revealed = true;
+            
+            if (mineGrid[r][c].mine) {
+                mineGameOver = true;
+                clearInterval(mineTimer);
+                alert('Game Over! You hit a mine!');
+                for (let i = 0; i < mineRows; i++) {
+                    for (let j = 0; j < mineCols; j++) {
+                        if (mineGrid[i][j].mine) mineGrid[i][j].revealed = true;
+                    }
+                }
+            } else if (mineGrid[r][c].adjacent === 0) {
+                for (let di = -1; di <= 1; di++) {
+                    for (let dj = -1; dj <= 1; dj++) {
+                        const ni = r + di, nj = c + dj;
+                        if (ni >= 0 && ni < mineRows && nj >= 0 && nj < mineCols) {
+                            revealCell(ni, nj);
+                        }
+                    }
+                }
+            }
+            
+            renderMinesweeper();
+        }
+
+        function toggleFlag(r, c) {
+            if (mineGrid[r][c].revealed) return;
+            mineGrid[r][c].flagged = !mineGrid[r][c].flagged;
+            renderMinesweeper();
+        }
+
+        let paintCanvas, paintCtx;
+        let paintColor = 'black';
+        let isPainting = false;
+
+        function initPaint() {
+            paintCanvas = document.getElementById('paintCanvas');
+            paintCtx = paintCanvas.getContext('2d');
+            paintCtx.fillStyle = 'white';
+            paintCtx.fillRect(0, 0, paintCanvas.width, paintCanvas.height);
+            
+            paintCanvas.onmousedown = (e) => {
+                isPainting = true;
+                const rect = paintCanvas.getBoundingClientRect();
+                paintCtx.beginPath();
+                paintCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            };
+            
+            paintCanvas.onmousemove = (e) => {
+                if (isPainting) {
+                    const rect = paintCanvas.getBoundingClientRect();
+                    paintCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                    paintCtx.strokeStyle = paintColor;
+                    paintCtx.lineWidth = 2;
+                    paintCtx.stroke();
+                }
+            };
+            
+            paintCanvas.onmouseup = () => isPainting = false;
+            paintCanvas.onmouseleave = () => isPainting = false;
+        }
+
+        function paintClear() {
+            paintCtx.fillStyle = 'white';
+            paintCtx.fillRect(0, 0, paintCanvas.width, paintCanvas.height);
+        }
+
+        let snakeCanvas, snakeCtx;
+        let snake, snakeDir, food, snakeScore, snakeGame;
+        const gridSize = 20;
+
+        function initSnake() {
+            snakeCanvas = document.getElementById('snakeCanvas');
+            snakeCtx = snakeCanvas.getContext('2d');
+            resetSnake();
+        }
+
+        function resetSnake() {
+            snake = [{x: 10, y: 10}];
+            snakeDir = {x: 1, y: 0};
+            food = {x: 15, y: 15};
+            snakeScore = 0;
+            document.getElementById('snakeScore').textContent = '0';
+            
+            if (snakeGame) clearInterval(snakeGame);
+            snakeGame = setInterval(updateSnake, 150);
+            
+            document.onkeydown = (e) => {
+                if (e.key === 'ArrowUp' && snakeDir.y === 0) snakeDir = {x: 0, y: -1};
+                if (e.key === 'ArrowDown' && snakeDir.y === 0) snakeDir = {x: 0, y: 1};
+                if (e.key === 'ArrowLeft' && snakeDir.x === 0) snakeDir = {x: -1, y: 0};
+                if (e.key === 'ArrowRight' && snakeDir.x === 0) snakeDir = {x: 1, y: 0};
+            };
+        }
+
+        function updateSnake() {
+            const head = {x: snake[0].x + snakeDir.x, y: snake[0].y + snakeDir.y};
+            
+            if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20 || 
+                snake.some(s => s.x === head.x && s.y === head.y)) {
+                clearInterval(snakeGame);
+                alert('Game Over! Score: ' + snakeScore);
+                return;
+            }
+            
+            snake.unshift(head);
+            
+            if (head.x === food.x && head.y === food.y) {
+                snakeScore++;
+                document.getElementById('snakeScore').textContent = snakeScore;
+                food = {x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20)};
+            } else {
+                snake.pop();
+            }
+            
+            drawSnake();
+        }
+
+        function drawSnake() {
+            snakeCtx.fillStyle = '#000';
+            snakeCtx.fillRect(0, 0, 400, 400);
+            
+            snakeCtx.fillStyle = '#0f0';
+            snake.forEach(s => {
+                snakeCtx.fillRect(s.x * gridSize, s.y * gridSize, gridSize - 2, gridSize - 2);
+            });
+            
+            snakeCtx.fillStyle = '#f00';
+            snakeCtx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        }
+
+        const terminalCommands = {
+            help: 'Available commands: help, ls, clear, neofetch, uname, apps, date',
+            ls: 'Desktop  Documents  Downloads  notepad.exe  calculator.exe  paint.exe',
+            clear: 'CLEAR',
+            date: new Date().toString(),
+            apps: 'Installed: Browser, Notepad, Calculator, Paint, Minesweeper, Snake',
+            neofetch: `
+       _,met$$$gg.          user@swiftos
+    ,g$$$$$$$$P.       -------------
+  ,g$P"     """Y$.".        OS: SwiftOS 1.0
+ ,$P'              \`$$.     Kernel: 5.15.0-swift
+',$P       ,ggs.     \`$b:   Shell: bash 5.1.16
+\`d$'     ,$P"'   .    $$    DE: FVWM95
+ $P      d     ,    $P      Processor : Intel Core I5 1235U
+ $:      $.   -    ,d$'     Ram : 16GB DDR4
+ $;      Y$b._   _,d$P'     Boot disk : SwiftOS SSD
+ Y$.    \`."Y$$$P"'         Terminal : xterm`,
+            uname: 'Linux swiftos 5.15.0-swift #1 SMP x86_64 GNU/Linux'
+        };
+
+        function handleTerminalInput(e) {
+            if (e.key === 'Enter') {
+                const input = e.target.value.trim();
+                const terminal = document.getElementById('terminalContent');
+                
+                terminal.innerHTML += `<div>user@swiftos:~$ ${input}</div>`;
+                
+                if (input === 'clear') {
+                    terminal.innerHTML = '<div style="margin-top: 10px;"><div class="terminal-input"><span>user@swiftos:~$</span><input type="text" id="terminalInput" onkeypress="handleTerminalInput(event)"></div></div>';
+                } else if (terminalCommands[input]) {
+                    terminal.innerHTML += `<div style="white-space: pre-wrap;">${terminalCommands[input]}</div>`;
+                } else if (input) {
+                    terminal.innerHTML += `<div>bash: ${input}: command not found</div>`;
+                }
+                
+                terminal.innerHTML += '<div style="margin-top: 5px;"><div class="terminal-input"><span>user@swiftos:~$</span><input type="text" id="terminalInput" onkeypress="handleTerminalInput(event)"></div></div>';
+                document.getElementById('terminalInput').focus();
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        function showDialog(msg) {
+            document.getElementById('dialogMessage').textContent = msg;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function closeDialog() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        function showAbout() {
+            showDialog('SwiftOS v1.0\n\nSistem operasi Linux berbasis web\nCreated by : STN PROJECT REBORN\nsupported by : RE Project\n\n© 2025 SwiftOS Project');
+            closeStartMenu();
+        }
+
+        function shutdown() {
+            closeStartMenu();
+            document.body.innerHTML = '<div style="width: 100vw; height: 100vh; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px;"><div style="margin-bottom: 20px;">SwiftOS</div><div>It\'s now safe to turn off your computer.</div></div>';
+        }
+
+        updateTaskbar();
+    </script>
+</body>
+</html>
